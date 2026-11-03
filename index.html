@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager Pro Max</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Confetti Animation Script -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 40px;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+        h2 { text-align: center; color: #2c3e50; margin-top: 0; font-weight: 600; }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #2c3e50;
+            background: #e8f4f8;
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        .xp-bar {
+            width: 100%;
+            background: #ddd;
+            height: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #11998e 0%, #38ef7d 100%);
+            width: 0%;
+            transition: width 0.5s ease-out;
+        }
+        .input-area { display: flex; gap: 8px; margin-bottom: 10px; }
+        input[type="text"] {
+            flex: 2;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            outline: none;
+            font-family: 'Poppins', sans-serif;
+        }
+        select {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            outline: none;
+        }
+        button.add-btn {
+            padding: 12px 20px;
+            background: #2c5364;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+        button.add-btn:hover { background: #0f2027; }
+        ul { list-style: none; padding: 0; margin-top: 15px; }
+        li {
+            background: #fff;
+            margin: 10px 0;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            border-radius: 8px;
+            align-items: center;
+            border-left: 5px solid #ccc; /* Priority color will go here */
+            box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+            transition: 0.2s;
+        }
+        li:hover { transform: translateX(5px); }
+        .completed { text-decoration: line-through; opacity: 0.6; background: #f4f4f4; }
+        .delete-btn { background: transparent; color: #e74c3c; padding: 0; font-size: 18px; border: none; cursor: pointer; }
+        
+        .clear-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 15px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: none; /* Only show when there are completed tasks */
+        }
+        .clear-btn:hover { background: #c0392b; }
+        
+        .footer {
+            margin-top: 25px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>⚡ Task Manager Pro</h2>
+    
+    <div class="stats">
+        <span id="level-text">Level: 1</span>
+        <span id="xp-text">0 / 100 XP</span>
+    </div>
+    <div class="xp-bar"><div class="xp-fill" id="xp-fill"></div></div>
+
+    <div class="input-area">
+        <input type="text" id="task-input" placeholder="Enter task...">
+        <select id="priority-input">
+            <option value="low">🟢 Low</option>
+            <option value="medium">🟡 Medium</option>
+            <option value="high">🔴 High</option>
+        </select>
+        <button class="add-btn" onclick="addTask()">Add</button>
+    </div>
+
+    <ul id="task-list"></ul>
+    
+    <button class="clear-btn" id="clear-btn" onclick="clearCompleted()">🗑️ Clear Completed Tasks</button>
+</div>
+
+<div class="footer">
+    Developed by Atharv Surate | Roll No: CS2139
+</div>
+
+<script>
+    let tasks = JSON.parse(localStorage.getItem('proTasks')) || [];
+    let xp = parseInt(localStorage.getItem('proXp')) || 0;
+    let level = parseInt(localStorage.getItem('proLevel')) || 1;
+
+    function updateStats() {
+        if (xp >= 100) {
+            level++;
+            xp = xp - 100;
+            // Confetti Animation for Level Up
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+            setTimeout(() => alert(`🎉 LEVEL UP! Welcome to Level ${level}!`), 500);
+        }
+        document.getElementById('level-text').innerText = `Level: ${level}`;
+        document.getElementById('xp-text').innerText = `${xp} / 100 XP`;
+        document.getElementById('xp-fill').style.width = `${xp}%`;
+        
+        localStorage.setItem('proXp', xp);
+        localStorage.setItem('proLevel', level);
+    }
+
+    function renderTasks() {
+        const list = document.getElementById('task-list');
+        list.innerHTML = '';
+        let hasCompleted = false;
+
+        tasks.forEach((t, index) => {
+            if (t.completed) hasCompleted = true;
+            
+            // Priority colors
+            let borderColor = t.priority === 'high' ? '#e74c3c' : (t.priority === 'medium' ? '#f1c40f' : '#2ecc71');
+
+            list.innerHTML += `
+                <li class="${t.completed ? 'completed' : ''}" style="border-left-color: ${borderColor}">
+                    <span onclick="toggleTask(${index})" style="cursor:pointer; flex:1; display:flex; align-items:center; gap:10px; font-size: 15px;">
+                        ${t.completed ? '✅' : '⬜'} ${t.text}
+                    </span>
+                    <button class="delete-btn" onclick="deleteTask(${index})">✖</button>
+                </li>
+            `;
+        });
+
+        document.getElementById('clear-btn').style.display = hasCompleted ? 'block' : 'none';
+        localStorage.setItem('proTasks', JSON.stringify(tasks));
+    }
+
+    function addTask() {
+        const input = document.getElementById('task-input');
+        const priority = document.getElementById('priority-input').value;
+        if (input.value.trim() === '') return;
+        
+        tasks.push({ text: input.value, completed: false, priority: priority });
+        input.value = '';
+        renderTasks();
+    }
+
+    function toggleTask(index) {
+        if (!tasks[index].completed) {
+            xp += 20; 
+            updateStats();
+        } else {
+            xp = Math.max(0, xp - 20); 
+            updateStats();
+        }
+        tasks[index].completed = !tasks[index].completed;
+        renderTasks();
+    }
+
+    function deleteTask(index) {
+        tasks.splice(index, 1);
+        renderTasks();
+    }
+
+    function clearCompleted() {
+        tasks = tasks.filter(t => !t.completed);
+        renderTasks();
+    }
+
+    updateStats();
+    renderTasks();
+</script>
+
+</body>
+</html>
